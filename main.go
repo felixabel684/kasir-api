@@ -208,37 +208,37 @@ func deleteCategory(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// Get localhost:8080/api/produk/{id}
-	// Put localhost:8080/api/produk/{id}
-	http.HandleFunc("/api/produk/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			getProdukByID(w,r)
-		} else if r.Method == "PUT" {
-			updateProduk(w,r)
-		} else if r.Method == "DELETE" {
-			deleteProduk(w, r)
-		}
-	})
-
-	http.HandleFunc("/api/categories/", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
-			getCategoryByID(w, r)
-		} else if r.Method == "PUT" {
-			updateCategory(w, r)
-		} else if r.Method == "DELETE" {
-			deleteCategory(w, r)
-		}
-	})
+	
 
 	// GET localhost:8080/api/produk
 	// POST localhost:8080/api/produk
 	http.HandleFunc("/api/produk", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
+		// jika path mengandung ID
+		if strings.HasPrefix(r.URL.Path, "/api/produk/") {
+			switch r.Method {
+			case "GET":
+				getProdukByID(w, r)
+			case "PUT":
+				updateProduk(w, r)
+			case "DELETE":
+				deleteProduk(w, r)
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+			return
+		}
+
+		// path tepat /api/produk
+		if r.URL.Path != "/api/produk" {
+			http.NotFound(w, r)
+			return
+		}
+
+		switch r.Method {
+		case "GET":
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(produk)
-			
-		} else if r.Method == "POST" {
-			// baca data dari request
+		case "POST":
 			var produkBaru Produk
 			err := json.NewDecoder(r.Body).Decode(&produkBaru)
 			if err != nil {
@@ -246,25 +246,46 @@ func main() {
 				return
 			}
 
-			// masukkin data ke dalam variable produk
 			produkBaru.ID = len(produk) + 1
 			produk = append(produk, produkBaru)
 
 			w.Header().Set("Content-Type", "application/json")
-			w.WriteHeader(http.StatusCreated) // 201
+			w.WriteHeader(http.StatusCreated)
 			json.NewEncoder(w).Encode(produkBaru)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
 
 	// GET localhost:8080/categories
 	// POST localhost:8080/categories
 	http.HandleFunc("/api/categories", func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" {
+		// jika ada ID
+		if strings.HasPrefix(r.URL.Path, "/api/categories/") {
+			switch r.Method {
+			case "GET":
+				getCategoryByID(w, r)
+			case "PUT":
+				updateCategory(w, r)
+			case "DELETE":
+				deleteCategory(w, r)
+			default:
+				http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			}
+			return
+		}
+
+		// path tepat /api/categories
+		if r.URL.Path != "/api/categories" {
+			http.NotFound(w, r)
+			return
+		}
+
+		switch r.Method {
+		case "GET":
 			w.Header().Set("Content-Type", "application/json")
 			json.NewEncoder(w).Encode(categories)
-
-		} else if r.Method == "POST" {
-			// baca data dari request
+		case "POST":
 			var categoryBaru Category
 			err := json.NewDecoder(r.Body).Decode(&categoryBaru)
 			if err != nil {
@@ -278,6 +299,8 @@ func main() {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusCreated)
 			json.NewEncoder(w).Encode(categoryBaru)
+		default:
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
 		}
 	})
 
